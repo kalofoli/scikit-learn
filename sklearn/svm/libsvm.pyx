@@ -39,6 +39,12 @@ cdef extern from *:
     ctypedef struct svm_parameter:
         pass
 
+    ctypedef struct solution_info:
+        pass
+
+cdef extern from "libsvm_helper.c":
+    void copy_iters(char *, solution_info*)
+
 np.import_array()
 
 
@@ -189,9 +195,17 @@ def fit(
         raise ValueError(error_repl)
 
     # this does the real work
-    cdef int fit_status = 0
+    cdef solution_info si
     with nogil:
-        model = svm_train(&problem, &param, &fit_status)
+        #model = svm_train(&problem, &param, &fit_status)
+        model = svm_train_si(&problem, &param, &si)
+    cdef int fit_status = si.status
+    
+    cdef np.ndarray[np.int32_t, ndim=1, mode='c'] n_iters
+    n_iters = np.empty(si.n_svm, dtype=np.int32)
+    copy_iters(n_iters.data, &si)
+    free(si.iters)
+        
 
     # from here until the end, we just copy the data returned by
     # svm_train
@@ -247,7 +261,7 @@ def fit(
     free(problem.x)
 
     return (support, support_vectors, n_class_SV, sv_coef, intercept,
-           probA, probB, fit_status)
+           probA, probB, fit_status, n_iters)
 
 
 cdef void set_predict_params(

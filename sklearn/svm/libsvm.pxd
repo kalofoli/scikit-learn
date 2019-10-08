@@ -32,9 +32,16 @@ cdef extern from "svm.h":
         double *y
         svm_node *x
         double *W # instance weights
+        
+    cdef struct solution_info:
+        int nr_class
+        int n_svm
+        int *iters
+        int status
 
     char *svm_check_parameter(svm_problem *, svm_parameter *)
     svm_model *svm_train(svm_problem *, svm_parameter *, int *) nogil
+    svm_model *svm_train_si(svm_problem *, svm_parameter *, solution_info *) nogil
     void svm_free_and_destroy_model(svm_model** model_ptr_ptr)
     void svm_cross_validation(svm_problem *, svm_parameter *, int nr_fold, double *target) nogil
 
@@ -53,6 +60,7 @@ cdef extern from "libsvm_helper.c":
                          char *, char *, char *, char *)
 
     void copy_sv_coef   (char *, svm_model *)
+    void copy_iters     (char *, solution_info *)
     void copy_intercept (char *, svm_model *, np.npy_intp *)
     void copy_SV        (char *, svm_model *, np.npy_intp *)
     int copy_support (char *data, svm_model *model)

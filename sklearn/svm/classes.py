@@ -579,6 +579,12 @@ class SVC(BaseSVC):
     fit_status_ : int
         0 if correctly fitted, 1 otherwise (will raise warning)
 
+    iters_ : array of shape (n_class*(n_class-1)/2,)
+        Number of iterations needed for each decision function.
+        For multiclass classification these correspond to the elements of the upper triangular matrix T 
+        (in row major order), where the i-th row and j-th column of T contains the iterations for
+        the decision function between classes i and j.
+
     classes_ : array of shape (n_classes,)
         The classes labels.
 
@@ -788,6 +794,12 @@ class NuSVC(BaseSVC):
     fit_status_ : int
         0 if correctly fitted, 1 if the algorithm did not converge.
 
+    iters_ : array of shape (n_class*(n_class-1)/2,)
+        Number of iterations needed for each decision function.
+        For multiclass classification these correspond to the elements of the upper triangular matrix T 
+        (in row major order), where the i-th row and j-th column of T contains the iterations for
+        the decision function between classes i and j.
+
     probA_ : ndarray, shape of (n_class * (n_class-1) / 2,)
     probB_ : ndarray of shape (n_class * (n_class-1) / 2,)
         If `probability=True`, it corresponds to the parameters learned in
@@ -945,6 +957,9 @@ class SVR(RegressorMixin, BaseLibSVM):
     fit_status_ : int
         0 if correctly fitted, 1 otherwise (will raise warning)
 
+    iters_ : array of shape=[1]
+        Number of iterations needed.
+
     intercept_ : array, shape = [1]
         Constants in decision function.
 
@@ -1070,6 +1085,9 @@ class NuSVR(RegressorMixin, BaseLibSVM):
 
         `coef_` is readonly property derived from `dual_coef_` and
         `support_vectors_`.
+
+    iters_ : array of shape=[1]
+        Number of iterations needed.
 
     intercept_ : array, shape = [1]
         Constants in decision function.
@@ -1204,6 +1222,9 @@ class OneClassSVM(OutlierMixin, BaseLibSVM):
     fit_status_ : int
         0 if correctly fitted, 1 otherwise (will raise warning)
 
+    iters_ : array of shape=[1]
+        Number of iterations needed.
+    
     Examples
     --------
     >>> from sklearn.svm import OneClassSVM

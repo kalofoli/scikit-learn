@@ -539,6 +539,7 @@ public:
                 double *upper_bound;
 		double r;	// for Solver_NU
                 bool solve_timed_out;
+		int iters;
 	};
 
 	void Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
@@ -873,7 +874,7 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 			}
 		}
 	}
-
+	si->iters = iter;
 	// calculate rho
 
 	si->rho = calculate_rho();
@@ -1825,9 +1826,9 @@ struct decision_function
 	double rho;	
 };
 
-static decision_function svm_train_one(
+static decision_function svm_train_one_iters(
 	const PREFIX(problem) *prob, const svm_parameter *param,
-	double Cp, double Cn, int *status)
+	double Cp, double Cn, int *status, int *iters)
 {
 	double *alpha = Malloc(double,prob->l);
 	Solver::SolutionInfo si;
@@ -1856,6 +1857,7 @@ static decision_function svm_train_one(
 	}
 
         *status |= si.solve_timed_out;
+		*iters = si.iters;
 
 	info("obj = %f, rho = %f\n",si.obj,si.rho);
 
@@ -1891,6 +1893,13 @@ static decision_function svm_train_one(
 	return f;
 }
 
+static decision_function svm_train_one(
+	const PREFIX(problem) *prob, const svm_parameter *param,
+	double Cp, double Cn, int *status)
+{
+	int iters;
+	return svm_train_one_iters(prob, param, Cp, Cn, status, &iters);
+}
 // Platt's binary SVM Probabilistic Output: an improvement from Lin et al.
 static void sigmoid_train(
 	int l, const double *dec_values, const double *labels, 
@@ -2335,12 +2344,13 @@ static void remove_zero_weight(PREFIX(problem) *newprob, const PREFIX(problem) *
 //
 // Interface functions
 //
-PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *param,
-        int *status)
+PREFIX(model) *PREFIX(train_si)(const PREFIX(problem) *prob, const svm_parameter *param, struct solution_info *si)
 {
 	PREFIX(problem) newprob;
 	remove_zero_weight(&newprob, prob);
 	prob = &newprob;
+	int *status = &si->status;
+    si->status = 0;
 
 	PREFIX(model) *model = Malloc(PREFIX(model),1);
 	model->param = *param;
@@ -2370,7 +2380,10 @@ PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *p
 			model->probA[0] = NAMESPACE::svm_svr_probability(prob,param);
 		}
 
-                NAMESPACE::decision_function f = NAMESPACE::svm_train_one(prob,param,0,0, status);
+		si->n_svm = 1;
+		si->iters = Malloc(int, 1);
+		si->nr_class = 1;
+                NAMESPACE::decision_function f = NAMESPACE::svm_train_one_iters(prob,param,0,0, status, si->iters);
 		model->rho = Malloc(double,1);
 		model->rho[0] = f.rho;
 
@@ -2454,6 +2467,12 @@ PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *p
 			probA=Malloc(double,nr_class*(nr_class-1)/2);
 			probB=Malloc(double,nr_class*(nr_class-1)/2);
 		}
+		
+		si->iters = Malloc(int, nr_class*(nr_class-1)/2);
+		si->nr_class = nr_class;
+		si->n_svm = nr_class*(nr_class-1)/2;
+		
+		int * piters = si->iters;
 
 		int p = 0;
 		for(i=0;i<nr_class;i++)
@@ -2487,7 +2506,7 @@ PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *p
 				if(param->probability)
                                     NAMESPACE::svm_binary_svc_probability(&sub_prob,param,weighted_C[i],weighted_C[j],probA[p],probB[p], status);
 
-				f[p] = NAMESPACE::svm_train_one(&sub_prob,param,weighted_C[i],weighted_C[j], status);
+				f[p] = NAMESPACE::svm_train_one_iters(&sub_prob,param,weighted_C[i],weighted_C[j], status, piters++);
 				for(k=0;k<ci;k++)
 					if(!nonzero[si+k] && fabs(f[p].alpha[k]) > 0)
 						nonzero[si+k] = true;
@@ -2618,6 +2637,19 @@ PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *p
 	return model;
 }
 
+//
+// Interface functions
+//
+PREFIX(model) *PREFIX(train)(const PREFIX(problem) *prob, const svm_parameter *param,
+        int *status)
+{
+	struct solution_info si;
+	
+	PREFIX(model) *mdl = PREFIX(train_si)(prob, param, &si);
+	if(status)
+		*status = si.status;
+	return mdl;
+}
 // Stratified cross validation
 void PREFIX(cross_validation)(const PREFIX(problem) *prob, const svm_parameter *param, int nr_fold, double *target)
 {

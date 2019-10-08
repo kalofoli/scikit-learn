@@ -246,7 +246,7 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
         # add other parameters to __init__
         self.support_, self.support_vectors_, self._n_support, \
             self.dual_coef_, self.intercept_, self.probA_, \
-            self.probB_, self.fit_status_ = libsvm.fit(
+            self.probB_, self.fit_status_, self.iters_ = libsvm.fit(
                 X, y,
                 svm_type=solver_type, sample_weight=sample_weight,
                 class_weight=self.class_weight_, kernel=kernel, C=self.C,

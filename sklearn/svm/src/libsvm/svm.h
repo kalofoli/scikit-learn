@@ -117,8 +117,16 @@ struct svm_csr_model
 				/* 0 if svm_model is created by svm_train */
 };
 
+struct solution_info
+{
+	int nr_class;
+	int n_svm; /* also used above as k: number of trained svm decision functions */
+	int *iters;
+	int status;
+};
 
 struct svm_model *svm_train(const struct svm_problem *prob, const struct svm_parameter *param, int *status);
+struct svm_model *svm_train_si(const struct svm_problem *prob, const struct svm_parameter *param, struct solution_info *si);
 void svm_cross_validation(const struct svm_problem *prob, const struct svm_parameter *param, int nr_fold, double *target);
 
 int svm_save_model(const char *model_file_name, const struct svm_model *model);

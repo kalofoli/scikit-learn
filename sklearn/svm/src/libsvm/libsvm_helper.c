@@ -348,6 +348,12 @@ int copy_predict_proba(char *predict, struct svm_model *model, npy_intp *predict
     return 0;
 }
 
+#define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+void copy_iters(char *data, struct solution_info *si)
+{
+    const int iter_element_size = sizeof(*((struct solution_info*)0)->iters);
+    memcpy(data, si->iters, iter_element_size*si->n_svm);
+}
 
 /*
  * Some free routines. Some of them are nontrivial since a lot of
