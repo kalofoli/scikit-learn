@@ -32,6 +32,7 @@ Authors
 
 import warnings
 import  numpy as np
+from collections import OrderedDict
 cimport numpy as np
 from libc.stdlib cimport free
 
@@ -158,6 +159,16 @@ def fit(
 
     probA, probB : array of shape (n_class*(n_class-1)/2,)
         Probability estimates, empty array for probability=False.
+        
+    fit_status : int
+        0 if correctly fitted, 1 otherwise (will raise warning)
+    
+    iters : array of shape (n_class*(n_class-1)/2,)
+        Number of iterations needed for each decision function.
+        For multiclass classification these correspond to the elements of the upper triangular matrix T 
+        (in row major order), where the i-th row and j-th column of T contains the iterations for
+        the decision function between classes i and j.
+
     """
 
     cdef svm_parameter param
@@ -260,8 +271,10 @@ def fit(
     svm_free_and_destroy_model(&model)
     free(problem.x)
 
-    return (support, support_vectors, n_class_SV, sv_coef, intercept,
-           probA, probB, fit_status, n_iters)
+    return OrderedDict(support=support, support_vectors=support_vectors,
+            n_class_SV=n_class_SV, sv_coef=sv_coef, 
+            intercept=intercept,probA=probA,probB=probB, fit_status=fit_status, 
+            n_iters=n_iters)
 
 
 cdef void set_predict_params(

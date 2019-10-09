@@ -24,6 +24,7 @@ from sklearn.utils.testing import assert_no_warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.exceptions import NotFittedError, UndefinedMetricWarning
 from sklearn.multiclass import OneVsRestClassifier
+from itertools import islice
 
 # toy sample
 X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
@@ -62,12 +63,15 @@ def test_libsvm_iris():
 
     # check also the low-level API
     model = svm.libsvm.fit(iris.data, iris.target.astype(np.float64))
-    pred = svm.libsvm.predict(iris.data, *model)
+    
+    def predict_params(model):
+        return islice(model.values(),7)
+    pred = svm.libsvm.predict(iris.data, *predict_params(model))
     assert np.mean(pred == iris.target) > .95
 
     model = svm.libsvm.fit(iris.data, iris.target.astype(np.float64),
                            kernel='linear')
-    pred = svm.libsvm.predict(iris.data, *model, kernel='linear')
+    pred = svm.libsvm.predict(iris.data, *predict_params(model), kernel='linear')
     assert np.mean(pred == iris.target) > .95
 
     pred = svm.libsvm.cross_validation(iris.data,
@@ -1220,3 +1224,7 @@ def test_n_support_oneclass_svr():
     assert reg.n_support_ == reg.support_vectors_.shape[0]
     assert reg.n_support_.size == 1
     assert reg.n_support_ == 4
+   
+    
+    
+    

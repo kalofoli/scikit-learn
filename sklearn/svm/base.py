@@ -244,9 +244,7 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
 
         # we don't pass **self.get_params() to allow subclasses to
         # add other parameters to __init__
-        self.support_, self.support_vectors_, self._n_support, \
-            self.dual_coef_, self.intercept_, self.probA_, \
-            self.probB_, self.fit_status_, self.iters_ = libsvm.fit(
+        model = libsvm.fit(
                 X, y,
                 svm_type=solver_type, sample_weight=sample_weight,
                 class_weight=self.class_weight_, kernel=kernel, C=self.C,
@@ -255,7 +253,11 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
                 cache_size=self.cache_size, coef0=self.coef0,
                 gamma=self._gamma, epsilon=self.epsilon,
                 max_iter=self.max_iter, random_seed=random_seed)
-
+        
+        self.support_, self.support_vectors_, self._n_support, \
+            self.dual_coef_, self.intercept_, self.probA_, \
+            self.probB_, self.fit_status_, self.iters_ = model.values()
+        
         self._warn_from_fit_status()
 
     def _sparse_fit(self, X, y, sample_weight, solver_type, kernel,
